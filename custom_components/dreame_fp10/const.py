@@ -1,7 +1,7 @@
 """Constants for Dreame FP10 Air Purifier integration."""
 
 DOMAIN = "dreame_fp10"
-VERSION = "0.1.4"
+VERSION = "0.1.5"
 SCAN_INTERVAL = 30
 
 CONF_COUNTRY = "country"

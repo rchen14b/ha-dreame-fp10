@@ -26,6 +26,7 @@ Custom Home Assistant integration for the **Dreame FP10 Air Purifier** (model `d
 - **Device Location**
 
 ### Controls
+- **Mode select** — switch Smart / Sleep / Customize / Pet directly (also available as fan preset modes)
 - **Switches** — Child Lock, Keypress Tone
 - **Number** — Off Timer (0–12 hours)
 - **Button** — HEPA Filter Reset
