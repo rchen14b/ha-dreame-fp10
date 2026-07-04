@@ -15,8 +15,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     data = hass.data[DOMAIN][entry.entry_id]
     entities = []
     for p in data["purifiers"]:
-        entities.extend([DreameChildLockSwitch(data["coordinator"], p),
-                         DreameVoiceInteractionSwitch(data["coordinator"], p), DreameKeypressToneSwitch(data["coordinator"], p)])
+        entities.extend([DreameChildLockSwitch(data["coordinator"], p), DreameKeypressToneSwitch(data["coordinator"], p)])
     async_add_entities(entities)
 
 class DreameBaseSwitch(CoordinatorEntity, SwitchEntity):
@@ -39,14 +38,6 @@ class DreameChildLockSwitch(DreameBaseSwitch):
     def is_on(self): return self._purifier.child_lock
     async def async_turn_on(self, **kwargs): await self.hass.async_add_executor_job(self._purifier.set_child_lock, True); await self.coordinator.async_request_refresh()
     async def async_turn_off(self, **kwargs): await self.hass.async_add_executor_job(self._purifier.set_child_lock, False); await self.coordinator.async_request_refresh()
-
-class DreameVoiceInteractionSwitch(DreameBaseSwitch):
-    _attr_icon = "mdi:microphone"
-    def __init__(self, c, p): super().__init__(c, p, "voice_interaction", "Voice Interaction")
-    @property
-    def is_on(self): return self._purifier.voice_interaction
-    async def async_turn_on(self, **kwargs): await self.hass.async_add_executor_job(self._purifier.set_voice_interaction, True); await self.coordinator.async_request_refresh()
-    async def async_turn_off(self, **kwargs): await self.hass.async_add_executor_job(self._purifier.set_voice_interaction, False); await self.coordinator.async_request_refresh()
 
 class DreameKeypressToneSwitch(DreameBaseSwitch):
     _attr_icon = "mdi:volume-high"

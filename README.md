@@ -11,9 +11,13 @@ Custom Home Assistant integration for the **Dreame FP10 Air Purifier** (model `d
 
 ### Fan Entity
 - **Power on/off** — "Off" uses Sleep mode at minimum speed to keep the device cloud-connected (Dreame purifiers cannot be woken remotely from true standby)
-- **Preset modes** — Smart, Sleep, Customize, Pet
-- **Fan speed** — 5 speed levels (shown as 20/40/60/80/100% in HA)
+- **Preset modes** — Smart, Sleep, Customize, Pet (all values verified against a live FP10)
+- **Fan speed** — 10 speed levels (10% steps in HA)
 - Setting fan speed automatically switches to Customize mode
+
+### Ambient Light
+- The FP10's light strip as a real HA **light entity**: on/off, brightness (0–100%), and a **Breathing** effect — all verified read+write against a live device
+- The app's Nature/Bright presets are just brightness levels (50 / 80); pick any value in HA
 
 ### Sensors
 - **PM2.5** — real-time particulate matter (µg/m³)
@@ -23,10 +27,11 @@ Custom Home Assistant integration for the **Dreame FP10 Air Purifier** (model `d
 - **Device Location**
 
 ### Controls
-- **Switches** — Child Lock, Voice Interaction, Keypress Tone
-- **Selects** — Light Control (Off/Blue/Orange/Green), Voice Interaction Volume
+- **Switches** — Child Lock, Keypress Tone
 - **Number** — Off Timer (0–12 hours)
 - **Button** — HEPA Filter Reset
+
+The FP10 has no voice-interaction features; its only sound is the keypress tone.
 
 ## Installation
 
@@ -74,9 +79,8 @@ Mapped by live read-only probes of a real FP10 (`dreame.airp.u2513`, firmware 20
 | 1 | 4 | Firmware Revision | string, e.g. "2062" | live-read |
 | 1 | 5 | Serial Number | string | live-read |
 | 2 | 1 | Power | 1=on, 2=standby | live-read |
-| 2 | 3 | Mode | 0=Smart, 2=Sleep, 3=Customize, 4=Pet | 0 and 2 observed live; 3 and 4 unconfirmed |
-| 2 | 4 | Fan Speed | 1–5 (device may support 1–10) | read 1; max unconfirmed |
-| 2 | 6 | Light Control | enum unknown | read 0 while the light was orange — mapping unconfirmed |
+| 2 | 3 | Mode | 0=Smart, 2=Sleep, 3=Customize, 4=Pet | **verified** — all four observed live |
+| 2 | 4 | Fan Speed | 1–10 | **verified** — level 8 observed live |
 | 2 | 7 | Keypress Tone | 0/1 | read 0; unconfirmed |
 | 3 | 11 | Air Quality Level | numeric index | plausible — read 0 with clean air |
 | 3 | 12 | PM2.5 | µg/m³ | **confirmed** — tracked the app across reads (8 → 10) |
@@ -90,9 +94,9 @@ Mapped by live read-only probes of a real FP10 (`dreame.airp.u2513`, firmware 20
 | 6 | 2 | App schedules | encoded string | live-read, not polled |
 | 6 | 3 | Device Location | string | live-read |
 | 6 | 5 | Child Lock | type unknown | read `""` — semantics unconfirmed |
-| 6 | 6 | Voice Volume | 80/90/100 | live-read (80) |
-| 6 | 7 | Voice Interaction | 0/1 | read 0; unconfirmed |
+| 6 | 6 | Light Brightness | 0=off, 1–100 | **verified read+write** — app presets 30/50/80 |
 | 6 | 8 | Off Timer | hours | read 0 |
+| 6 | 12 | Light Breathing | 0=steady, 1=breathing | **verified read+write** |
 
 Not found on the FP10: temperature, humidity, and TVOC readings (the marketing-spec sensors) — nothing plausible responded anywhere in siid 1–12 / piid 1–20. They may only be pushed over Dreame's separate MQTT channel.
 

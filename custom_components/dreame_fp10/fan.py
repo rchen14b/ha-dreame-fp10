@@ -25,7 +25,7 @@ class DreameFP10Fan(CoordinatorEntity, FanEntity):
 
     _attr_has_entity_name = True
     _attr_name = None
-    _attr_speed_count = 5  # 5 speed levels
+    _attr_speed_count = 10  # 10 manual speed levels (verified live: slider reached 8)
 
     def __init__(self, coordinator, purifier: DreameAirPurifier):
         super().__init__(coordinator)
@@ -72,7 +72,6 @@ class DreameFP10Fan(CoordinatorEntity, FanEntity):
     def extra_state_attributes(self) -> dict[str, Any]:
         return {
             "fan_speed_level": self._purifier.fan_speed,
-            "light_control": self._purifier.light_control,
         }
 
     async def async_turn_on(self, percentage=None, preset_mode=None, **kwargs) -> None:
@@ -81,21 +80,23 @@ class DreameFP10Fan(CoordinatorEntity, FanEntity):
             await self.async_set_preset_mode(preset_mode)
         if percentage is not None:
             await self.async_set_percentage(percentage)
-        await self.coordinator.async_request_refresh()
+        # No immediate cloud re-poll: it returns stale pre-command state and
+        # makes the UI flip back. Optimistic state holds until the next poll.
+        self.async_write_ha_state()
 
     async def async_turn_off(self, **kwargs) -> None:
         await self.hass.async_add_executor_job(self._purifier.turn_off)
-        await self.coordinator.async_request_refresh()
+        self.async_write_ha_state()
 
     async def async_set_percentage(self, percentage: int) -> None:
         if percentage == 0:
             await self.async_turn_off()
             return
         await self.hass.async_add_executor_job(self._purifier.set_fan_speed_percent, percentage)
-        await self.coordinator.async_request_refresh()
+        self.async_write_ha_state()
 
     async def async_set_preset_mode(self, preset_mode: str) -> None:
         mode_value = MODE_NAME_TO_VALUE.get(preset_mode)
         if mode_value is not None:
             await self.hass.async_add_executor_job(self._purifier.set_mode, mode_value)
-            await self.coordinator.async_request_refresh()
+            self.async_write_ha_state()

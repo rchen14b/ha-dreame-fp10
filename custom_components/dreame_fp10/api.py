@@ -40,10 +40,9 @@ PROP_SERIAL = {"siid": 1, "piid": 5}        # str: serial number, e.g. "U2513U63
 
 # siid 2: Air Purifier Control
 PROP_POWER = {"siid": 2, "piid": 1}         # int: 1=on, 2=standby/off
-PROP_MODE = {"siid": 2, "piid": 3}          # int: 0=AI, 1=Strong, 2=Sleep, 3=Custom, 4=Pet (AP10 enum; FP10 read 0)
-PROP_FAN_SPEED = {"siid": 2, "piid": 4}     # int: 1-5 fan speed level
-PROP_LIGHT_CONTROL = {"siid": 2, "piid": 6} # int: -1=off, 0=blue, 1=orange, 2=green
-PROP_KEYPRESS_TONE = {"siid": 2, "piid": 7} # int: 0=off, 1=on
+PROP_MODE = {"siid": 2, "piid": 3}          # int: 0=Smart, 2=Sleep, 3=Customize, 4=Pet (all verified live)
+PROP_FAN_SPEED = {"siid": 2, "piid": 4}     # int: 1-10 fan speed level (8 observed live; app has 10 steps)
+PROP_KEYPRESS_TONE = {"siid": 2, "piid": 7} # int: 0=off, 1=on (unverified)
 
 # siid 3: Environment Sensors — differs from AP10: piids 2-10 don't exist on FP10
 PROP_AQ_LEVEL = {"siid": 3, "piid": 11}     # int: air quality index (plausible; read 0 with PM2.5 at 8)
@@ -58,17 +57,18 @@ PROP_FILTER3_LIFE = {"siid": 4, "piid": 6}  # int: % (live: 89; which component 
 
 # siid 6: Device Settings — (6,1) timezone and (6,2) app schedules exist but aren't polled
 PROP_DEVICE_LOCATION = {"siid": 6, "piid": 3}   # str (live: "Illinois, Chicago")
-PROP_CHILD_LOCK = {"siid": 6, "piid": 5}    # AP10: 0/1; FP10 read "" — semantics unconfirmed
-PROP_VOICE_INTERACTION_VOLUME = {"siid": 6, "piid": 6}  # int: 80/90/100 (AP10 volume is at 2/5; FP10 read 80 here)
-PROP_VOICE_INTERACTION = {"siid": 6, "piid": 7} # int: 0=off, 1=on
+PROP_CHILD_LOCK = {"siid": 6, "piid": 5}    # FP10 read "" — semantics unconfirmed
+PROP_LIGHT_BRIGHTNESS = {"siid": 6, "piid": 6}  # int: 0=off, 1-100 brightness — VERIFIED live read+write (app presets: 30/50/80)
 PROP_TIMER = {"siid": 6, "piid": 8}         # int: hours
+PROP_LIGHT_BREATHING = {"siid": 6, "piid": 12}  # int: 0=steady, 1=breathing — VERIFIED live read+write
+# The FP10 has no voice interaction/volume features (confirmed by owner).
 
 # Poll batches (small to avoid timeout)
 POLL_BATCHES = [
-    [PROP_POWER, PROP_MODE, PROP_FAN_SPEED, PROP_LIGHT_CONTROL, PROP_KEYPRESS_TONE, PROP_FIRMWARE, PROP_SERIAL],
+    [PROP_POWER, PROP_MODE, PROP_FAN_SPEED, PROP_KEYPRESS_TONE, PROP_FIRMWARE, PROP_SERIAL],
     [PROP_AQ_LEVEL, PROP_PM25],
     [PROP_FILTER_LIFE, PROP_FILTER_DAYS_LEFT, PROP_FILTER_USED, PROP_FILTER2_LIFE, PROP_FILTER3_LIFE],
-    [PROP_DEVICE_LOCATION, PROP_CHILD_LOCK, PROP_VOICE_INTERACTION_VOLUME, PROP_VOICE_INTERACTION, PROP_TIMER],
+    [PROP_DEVICE_LOCATION, PROP_CHILD_LOCK, PROP_LIGHT_BRIGHTNESS, PROP_LIGHT_BREATHING, PROP_TIMER],
 ]
 
 # Mode enum — the FP10 app shows 4 modes: Smart, Sleep, Customize, Pet.
@@ -82,10 +82,6 @@ MODE_PET = 4
 
 MODE_NAMES = {MODE_SMART: "Smart", MODE_SLEEP: "Sleep", MODE_CUSTOM: "Customize", MODE_PET: "Pet"}
 MODE_NAME_TO_VALUE = {v: k for k, v in MODE_NAMES.items()}
-LIGHT_CONTROL_OPTIONS = {"Off": -1, "Blue": 0, "Orange": 1, "Green": 2}
-LIGHT_CONTROL_VALUE_TO_OPTION = {v: k for k, v in LIGHT_CONTROL_OPTIONS.items()}
-VOICE_INTERACTION_VOLUME_OPTIONS = {"Minimum": 80, "Moderate": 90, "High": 100}
-VOICE_INTERACTION_VOLUME_VALUE_TO_OPTION = {v: k for k, v in VOICE_INTERACTION_VOLUME_OPTIONS.items()}
 TIMER_MIN_HOURS = 0
 TIMER_MAX_HOURS = 12
 
@@ -293,8 +289,8 @@ class DreameAirPurifier:
         self._power = False
         self._mode = MODE_SMART
         self._fan_speed = 0
-        self._voice_interaction_volume = 80
-        self._light_control = -1
+        self._light_brightness = None
+        self._light_breathing = None
         self._keypress_tone = False
         self._pm25 = 0
         self._aq_level = 0
@@ -307,7 +303,6 @@ class DreameAirPurifier:
         self._filter3_life = None
         self._device_location = None
         self._child_lock = False
-        self._voice_interaction = False
         self._timer_hours = 0
         self._available = True
         self._seen_props = set()
@@ -340,15 +335,11 @@ class DreameAirPurifier:
     @property
     def fan_speed(self): return self._fan_speed
     @property
-    def fan_speed_percent(self): return max(0, self._fan_speed * 20) if self._fan_speed > 0 else 0
+    def fan_speed_percent(self): return max(0, self._fan_speed * 10) if self._fan_speed > 0 else 0
     @property
-    def light_control(self): return self._light_control
+    def light_brightness(self): return self._light_brightness
     @property
-    def light_control_option(self): return LIGHT_CONTROL_VALUE_TO_OPTION.get(self._light_control)
-    @property
-    def voice_interaction_volume(self): return self._voice_interaction_volume
-    @property
-    def voice_interaction_volume_option(self): return VOICE_INTERACTION_VOLUME_VALUE_TO_OPTION.get(self._voice_interaction_volume)
+    def light_breathing(self): return self._light_breathing
     @property
     def keypress_tone(self): return self._keypress_tone
     @property
@@ -373,8 +364,6 @@ class DreameAirPurifier:
     def device_location(self): return self._device_location
     @property
     def child_lock(self): return self._child_lock
-    @property
-    def voice_interaction(self): return self._voice_interaction
     @property
     def timer_hours(self): return self._timer_hours
 
@@ -401,7 +390,6 @@ class DreameAirPurifier:
         self._power = all_values.get((2, 1), 0) == 1
         self._mode = all_values.get((2, 3), self._mode)
         self._fan_speed = all_values.get((2, 4), self._fan_speed)
-        self._light_control = all_values.get((2, 6), self._light_control)
         self._keypress_tone = bool(all_values.get((2, 7), self._keypress_tone))
         self._firmware_version = all_values.get((1, 4), self._firmware_version)
         self._serial_number = all_values.get((1, 5), self._serial_number)
@@ -414,8 +402,8 @@ class DreameAirPurifier:
         self._filter3_life = all_values.get((4, 6), self._filter3_life)
         self._device_location = all_values.get((6, 3), self._device_location)
         self._child_lock = bool(all_values.get((6, 5), self._child_lock))
-        self._voice_interaction_volume = all_values.get((6, 6), self._voice_interaction_volume)
-        self._voice_interaction = bool(all_values.get((6, 7), self._voice_interaction))
+        self._light_brightness = all_values.get((6, 6), self._light_brightness)
+        self._light_breathing = all_values.get((6, 12), self._light_breathing)
         self._timer_hours = all_values.get((6, 8), self._timer_hours)
         return True
 
@@ -434,42 +422,55 @@ class DreameAirPurifier:
             return self.set_mode(MODE_SMART)
 
     def turn_off(self) -> bool:
-        """Turn off: switch to Sleep mode speed 1 (keeps device cloud-connected)."""
+        """Turn off: switch to Sleep mode at minimum speed (keeps device cloud-connected).
+
+        Speed is written FIRST: a manual speed write can bounce the device
+        into Customize mode, so Sleep must be the last write.
+        """
         # Don't actually power off - device can't be woken remotely
-        self.set_mode(MODE_SLEEP)
-        return self.set_fan_speed(1)
+        self.set_fan_speed(1)
+        return self.set_mode(MODE_SLEEP)
 
     def set_mode(self, mode: int) -> bool:
-        return self._api.set_property(self._did, 2, 3, mode, self._host)
+        # Track state optimistically on success — the cloud lags a few seconds
+        # behind writes, so an immediate re-poll would report stale state.
+        ok = self._api.set_property(self._did, 2, 3, mode, self._host)
+        if ok:
+            self._mode = mode
+        return ok
 
     def set_fan_speed(self, speed: int) -> bool:
-        return self._api.set_property(self._did, 2, 4, max(1, min(5, speed)), self._host)
+        speed = max(1, min(10, speed))
+        ok = self._api.set_property(self._did, 2, 4, speed, self._host)
+        if ok:
+            self._fan_speed = speed
+        return ok
 
     def set_fan_speed_percent(self, percent: int) -> bool:
         if percent <= 0:
             return self.turn_off()
         if self._mode != MODE_CUSTOM and not self.set_mode(MODE_CUSTOM):
             return False
-        return self.set_fan_speed(max(1, min(5, round(percent / 20))))
+        return self.set_fan_speed(max(1, min(10, round(percent / 10))))
 
-    def set_light_control(self, value: int) -> bool:
-        if value not in LIGHT_CONTROL_VALUE_TO_OPTION:
-            return False
-        return self._api.set_property(self._did, 2, 6, value, self._host)
+    def set_light_brightness(self, percent: int) -> bool:
+        percent = max(0, min(100, int(percent)))
+        ok = self._api.set_property(self._did, 6, 6, percent, self._host)
+        if ok:
+            self._light_brightness = percent
+        return ok
 
-    def set_voice_interaction_volume(self, value: int) -> bool:
-        if value not in VOICE_INTERACTION_VOLUME_VALUE_TO_OPTION:
-            return False
-        return self._api.set_property(self._did, 6, 6, value, self._host)
+    def set_light_breathing(self, enabled: bool) -> bool:
+        ok = self._api.set_property(self._did, 6, 12, 1 if enabled else 0, self._host)
+        if ok:
+            self._light_breathing = 1 if enabled else 0
+        return ok
 
     def set_keypress_tone(self, enabled: bool) -> bool:
         return self._api.set_property(self._did, 2, 7, 1 if enabled else 0, self._host)
 
     def set_child_lock(self, enabled: bool) -> bool:
         return self._api.set_property(self._did, 6, 5, 1 if enabled else 0, self._host)
-
-    def set_voice_interaction(self, enabled: bool) -> bool:
-        return self._api.set_property(self._did, 6, 7, 1 if enabled else 0, self._host)
 
     def set_timer(self, hours: int) -> bool:
         try:
