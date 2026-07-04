@@ -42,7 +42,6 @@ PROP_SERIAL = {"siid": 1, "piid": 5}        # str: serial number, e.g. "U2513U63
 PROP_POWER = {"siid": 2, "piid": 1}         # int: 1=on, 2=standby/off
 PROP_MODE = {"siid": 2, "piid": 3}          # int: 0=Smart, 2=Sleep, 3=Customize, 4=Pet (all verified live)
 PROP_FAN_SPEED = {"siid": 2, "piid": 4}     # int: 1-10 fan speed level (8 observed live; app has 10 steps)
-PROP_KEYPRESS_TONE = {"siid": 2, "piid": 7} # int: 0=off, 1=on (unverified)
 
 # siid 3: Environment Sensors — differs from AP10: piids 2-10 don't exist on FP10
 PROP_AQ_LEVEL = {"siid": 3, "piid": 11}     # int: air quality index (plausible; read 0 with PM2.5 at 8)
@@ -61,14 +60,15 @@ PROP_CHILD_LOCK = {"siid": 6, "piid": 5}    # FP10 read "" — semantics unconfi
 PROP_LIGHT_BRIGHTNESS = {"siid": 6, "piid": 6}  # int: 0=off, 1-100 brightness — VERIFIED live read+write (app presets: 30/50/80)
 PROP_TIMER = {"siid": 6, "piid": 8}         # int: hours
 PROP_LIGHT_BREATHING = {"siid": 6, "piid": 12}  # int: 0=steady, 1=breathing — VERIFIED live read+write
+PROP_KEYPRESS_TONE = {"siid": 6, "piid": 17}    # int: 0=off, 1=on — VERIFIED live read+write (default on)
 # The FP10 has no voice interaction/volume features (confirmed by owner).
 
 # Poll batches (small to avoid timeout)
 POLL_BATCHES = [
-    [PROP_POWER, PROP_MODE, PROP_FAN_SPEED, PROP_KEYPRESS_TONE, PROP_FIRMWARE, PROP_SERIAL],
+    [PROP_POWER, PROP_MODE, PROP_FAN_SPEED, PROP_FIRMWARE, PROP_SERIAL],
     [PROP_AQ_LEVEL, PROP_PM25],
     [PROP_FILTER_LIFE, PROP_FILTER_DAYS_LEFT, PROP_FILTER_USED, PROP_FILTER2_LIFE, PROP_FILTER3_LIFE],
-    [PROP_DEVICE_LOCATION, PROP_CHILD_LOCK, PROP_LIGHT_BRIGHTNESS, PROP_LIGHT_BREATHING, PROP_TIMER],
+    [PROP_DEVICE_LOCATION, PROP_CHILD_LOCK, PROP_LIGHT_BRIGHTNESS, PROP_LIGHT_BREATHING, PROP_KEYPRESS_TONE, PROP_TIMER],
 ]
 
 # Mode enum — the FP10 app shows 4 modes: Smart, Sleep, Customize, Pet.
@@ -392,7 +392,7 @@ class DreameAirPurifier:
         self._power = all_values.get((2, 1), 0) == 1
         self._mode = all_values.get((2, 3), self._mode)
         self._fan_speed = all_values.get((2, 4), self._fan_speed)
-        self._keypress_tone = bool(all_values.get((2, 7), self._keypress_tone))
+        self._keypress_tone = bool(all_values.get((6, 17), self._keypress_tone))
         self._firmware_version = all_values.get((1, 4), self._firmware_version)
         self._serial_number = all_values.get((1, 5), self._serial_number)
         self._aq_level = all_values.get((3, 11), self._aq_level)
@@ -469,7 +469,10 @@ class DreameAirPurifier:
         return ok
 
     def set_keypress_tone(self, enabled: bool) -> bool:
-        return self._api.set_property(self._did, 2, 7, 1 if enabled else 0, self._host)
+        ok = self._api.set_property(self._did, 6, 17, 1 if enabled else 0, self._host)
+        if ok:
+            self._keypress_tone = enabled
+        return ok
 
     def set_child_lock(self, enabled: bool) -> bool:
         return self._api.set_property(self._did, 6, 5, 1 if enabled else 0, self._host)

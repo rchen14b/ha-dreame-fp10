@@ -81,7 +81,6 @@ Mapped by live read-only probes of a real FP10 (`dreame.airp.u2513`, firmware 20
 | 2 | 1 | Power | 1=on, 2=standby | live-read |
 | 2 | 3 | Mode | 0=Smart, 2=Sleep, 3=Customize, 4=Pet | **verified** — all four observed live |
 | 2 | 4 | Fan Speed | 1–10 | **verified** — level 8 observed live |
-| 2 | 7 | Keypress Tone | 0/1 | read 0; unconfirmed |
 | 3 | 11 | Air Quality Level | numeric index | plausible — read 0 with clean air |
 | 3 | 12 | PM2.5 | µg/m³ | **confirmed** — tracked the app across reads (8 → 10) |
 | 3 | 13 | PM2.5 display string | e.g. "PM2.5-10" | live-read, not polled |
@@ -97,6 +96,7 @@ Mapped by live read-only probes of a real FP10 (`dreame.airp.u2513`, firmware 20
 | 6 | 6 | Light Brightness | 0=off, 1–100 | **verified read+write** — app presets 30/50/80 |
 | 6 | 8 | Off Timer | hours | read 0 |
 | 6 | 12 | Light Breathing | 0=steady, 1=breathing | **verified read+write** |
+| 6 | 17 | Keypress Tone | 0=off, 1=on (default) | **verified read+write** |
 
 Not found on the FP10: temperature, humidity, and TVOC readings (the marketing-spec sensors) — nothing plausible responded anywhere in siid 1–12 / piid 1–20. They may only be pushed over Dreame's separate MQTT channel.
 
