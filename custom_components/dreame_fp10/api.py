@@ -257,7 +257,9 @@ class DreameCloudAPI:
         values = {}
         if result and isinstance(result, list):
             for prop in result:
-                if prop.get("code", -1) == 0:
+                # The cloud occasionally returns code 0 with a null value for a
+                # single poll; treat those as missing so they can't wipe state.
+                if prop.get("code", -1) == 0 and prop.get("value") is not None:
                     values[(prop["siid"], prop["piid"])] = prop.get("value")
         return values
 
