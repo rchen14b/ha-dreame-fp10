@@ -71,14 +71,16 @@ POLL_BATCHES = [
     [PROP_DEVICE_LOCATION, PROP_CHILD_LOCK, PROP_VOICE_INTERACTION_VOLUME, PROP_VOICE_INTERACTION, PROP_TIMER],
 ]
 
-# Mode mapping (verified on AP10; FP10 expected identical — probe to confirm)
-MODE_AI_PURIFY = 0
-MODE_STRONG_PURIFICATION = 1
-MODE_SLEEP_PURIFICATION = 2
+# Mode enum — the FP10 app shows 4 modes: Smart, Sleep, Customize, Pet.
+# Values follow the AP10 enum (0=AI, 1=Strong, 2=Sleep, 3=Custom, 4=Pet)
+# minus Strong, which the FP10 doesn't have; the probe read 0 in the app's
+# default Smart mode. Confirm the rest via the watch tool.
+MODE_SMART = 0
+MODE_SLEEP = 2
 MODE_CUSTOM = 3
-MODE_PET_PURIFY = 4
+MODE_PET = 4
 
-MODE_NAMES = {MODE_AI_PURIFY: "AI Purify", MODE_STRONG_PURIFICATION: "Strong Purification", MODE_SLEEP_PURIFICATION: "Sleep Purification", MODE_CUSTOM: "Custom Mode", MODE_PET_PURIFY: "Pet Purify"}
+MODE_NAMES = {MODE_SMART: "Smart", MODE_SLEEP: "Sleep", MODE_CUSTOM: "Customize", MODE_PET: "Pet"}
 MODE_NAME_TO_VALUE = {v: k for k, v in MODE_NAMES.items()}
 LIGHT_CONTROL_OPTIONS = {"Off": -1, "Blue": 0, "Orange": 1, "Green": 2}
 LIGHT_CONTROL_VALUE_TO_OPTION = {v: k for k, v in LIGHT_CONTROL_OPTIONS.items()}
@@ -289,7 +291,7 @@ class DreameAirPurifier:
         self._mac = device_info.get("mac", "")
         self._name = device_info.get("customName") or device_info.get("deviceInfo", {}).get("displayName", "Dreame Air Purifier")
         self._power = False
-        self._mode = MODE_AI_PURIFY
+        self._mode = MODE_SMART
         self._fan_speed = 0
         self._voice_interaction_volume = 80
         self._light_control = -1
@@ -328,7 +330,7 @@ class DreameAirPurifier:
         if not self._power:
             return False
         # Sleep mode + speed 1 = our "off" state
-        if self._mode == MODE_SLEEP_PURIFICATION and self._fan_speed <= 1:
+        if self._mode == MODE_SLEEP and self._fan_speed <= 1:
             return False
         return True
     @property
@@ -421,20 +423,20 @@ class DreameAirPurifier:
         return self._api.call_action(self._did, ACTION_TOGGLE_POWER["siid"], ACTION_TOGGLE_POWER["aiid"], host=self._host)
 
     def turn_on(self) -> bool:
-        """Turn on: restore to AI Purify mode."""
+        """Turn on: restore to Smart mode."""
         # If in standby (power=2), toggle won't work. If in sleep "off", just set mode.
         if self._power:
-            # Device is on but in "sleep off" state - switch to AI Purify
-            return self.set_mode(MODE_AI_PURIFY)
+            # Device is on but in "sleep off" state - switch to Smart
+            return self.set_mode(MODE_SMART)
         else:
-            # Try toggle first, then set AI Purify
+            # Try toggle first, then set Smart mode
             self.toggle_power()
-            return self.set_mode(MODE_AI_PURIFY)
+            return self.set_mode(MODE_SMART)
 
     def turn_off(self) -> bool:
         """Turn off: switch to Sleep mode speed 1 (keeps device cloud-connected)."""
         # Don't actually power off - device can't be woken remotely
-        self.set_mode(MODE_SLEEP_PURIFICATION)
+        self.set_mode(MODE_SLEEP)
         return self.set_fan_speed(1)
 
     def set_mode(self, mode: int) -> bool:

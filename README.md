@@ -11,9 +11,9 @@ Custom Home Assistant integration for the **Dreame FP10 Air Purifier** (model `d
 
 ### Fan Entity
 - **Power on/off** — "Off" uses Sleep mode at minimum speed to keep the device cloud-connected (Dreame purifiers cannot be woken remotely from true standby)
-- **Preset modes** — AI Purify, Strong Purification, Sleep Purification, Custom Mode, Pet Purify
+- **Preset modes** — Smart, Sleep, Customize, Pet
 - **Fan speed** — 5 speed levels (shown as 20/40/60/80/100% in HA)
-- Setting fan speed automatically switches to Custom mode
+- Setting fan speed automatically switches to Customize mode
 
 ### Sensors
 - **PM2.5** — real-time particulate matter (µg/m³)
@@ -67,38 +67,38 @@ This integration communicates via the Dreame Cloud API (same as the Dreamehome a
 
 ## Property Map
 
-Mapped by a live read-only probe of a real FP10 (`dreame.airp.u2513`, firmware 2062) on 2026-07-04, cross-referenced against the AP10 (`dreame.airp.u2507`) map. Notable differences from the AP10: PM2.5 moved from (3,5) to (3,12), and voice volume moved from (2,5) to (6,6).
+Mapped by live read-only probes of a real FP10 (`dreame.airp.u2513`, firmware 2062), July 2026.
 
 | siid | piid | Property | Values | Status |
 |------|------|----------|--------|--------|
-| 1 | 4 | Firmware Revision | string, e.g. "2062" | live-read (FP10) |
-| 1 | 5 | Serial Number | string | live-read (FP10) |
-| 2 | 1 | Power | 1=on, 2=standby | live-read (FP10) |
-| 2 | 3 | Mode | 0=AI, 1=Strong, 2=Sleep, 3=Custom, 4=Pet | AP10 enum; FP10 read 0 — other values unconfirmed |
-| 2 | 4 | Fan Speed | 1–5 | live-read (FP10) |
-| 2 | 6 | Light Control | -1=off, 0=blue, 1=orange, 2=green | AP10 enum; FP10 read 0 |
-| 2 | 7 | Keypress Tone | 0/1 | AP10; FP10 read 0 |
-| 3 | 11 | Air Quality Level | numeric index | plausible — read 0 with clean air, unconfirmed |
-| 3 | 12 | PM2.5 | µg/m³ | **live-read (FP10)** — AP10 uses (3,5), which errors on FP10 |
-| 3 | 13 | PM2.5 display string | e.g. "PM2.5-8" | live-read (FP10), not polled |
-| 4 | 1 | Filter Life | 0–100% | live-read (FP10: 98) |
-| 4 | 2 | Filter Days Left | days | live-read (FP10: 709 ≈ 2-year filter) |
-| 4 | 3 | Filter Hours Used | hours | live-read (FP10) |
-| 4 | 5 | Filter 2 Life | 0–100% | live-read (FP10: 99) — which component (roller/pre-filter/carbon) TBD |
-| 4 | 6 | Filter 3 Life | 0–100% | live-read (FP10: 89) — which component TBD |
-| 6 | 1 | Timezone | string | live-read (FP10), not polled |
-| 6 | 2 | App schedules | encoded string | live-read (FP10), not polled |
-| 6 | 3 | Device Location | string | live-read (FP10) |
-| 6 | 5 | Child Lock | AP10: 0/1 | FP10 read `""` — semantics unconfirmed |
-| 6 | 6 | Voice Volume | 80/90/100 | live-read (FP10: 80) — AP10 has volume at (2,5) instead |
-| 6 | 7 | Voice Interaction | 0/1 | AP10; FP10 read 0 |
-| 6 | 8 | Off Timer | hours | AP10; FP10 read 0 |
+| 1 | 4 | Firmware Revision | string, e.g. "2062" | live-read |
+| 1 | 5 | Serial Number | string | live-read |
+| 2 | 1 | Power | 1=on, 2=standby | live-read |
+| 2 | 3 | Mode | 0=Smart, 2=Sleep, 3=Customize, 4=Pet | 0 and 2 observed live; 3 and 4 unconfirmed |
+| 2 | 4 | Fan Speed | 1–5 (device may support 1–10) | read 1; max unconfirmed |
+| 2 | 6 | Light Control | enum unknown | read 0 while the light was orange — mapping unconfirmed |
+| 2 | 7 | Keypress Tone | 0/1 | read 0; unconfirmed |
+| 3 | 11 | Air Quality Level | numeric index | plausible — read 0 with clean air |
+| 3 | 12 | PM2.5 | µg/m³ | **confirmed** — tracked the app across reads (8 → 10) |
+| 3 | 13 | PM2.5 display string | e.g. "PM2.5-10" | live-read, not polled |
+| 4 | 1 | Filter Life | 0–100% | live-read (98) |
+| 4 | 2 | Filter Days Left | days | live-read (709 ≈ 2-year filter) |
+| 4 | 3 | Filter Hours Used | hours | live-read |
+| 4 | 5 | Filter 2 Life | 0–100% | live-read (99) — which component (roller/pre-filter/carbon) TBD |
+| 4 | 6 | Filter 3 Life | 0–100% | live-read (89) — which component TBD |
+| 6 | 1 | Timezone | string | live-read, not polled |
+| 6 | 2 | App schedules | encoded string | live-read, not polled |
+| 6 | 3 | Device Location | string | live-read |
+| 6 | 5 | Child Lock | type unknown | read `""` — semantics unconfirmed |
+| 6 | 6 | Voice Volume | 80/90/100 | live-read (80) |
+| 6 | 7 | Voice Interaction | 0/1 | read 0; unconfirmed |
+| 6 | 8 | Off Timer | hours | read 0 |
 
 Not found on the FP10: temperature, humidity, and TVOC readings (the marketing-spec sensors) — nothing plausible responded anywhere in siid 1–12 / piid 1–20. They may only be pushed over Dreame's separate MQTT channel.
 
-**Probe caveat:** the cloud returns value `0` (success code) for many properties that don't exist — all of siid 5 and siids 8–12 read `0` for every piid. A `0` in probe output does not prove a property is real; only non-trivial values and app cross-checks do.
+**Probe caveat:** the cloud returns value `0` (success code) for many properties that don't exist — siids 8–12 read `0` for every piid. A `0` in probe output does not prove a property is real; only non-trivial values and app cross-checks do.
 
-**Key protocol notes (from the AP10 work):** power control requires a toggle action (`siid=2, aiid=3`) — direct property writes to `siid=2, piid=1` time out. Everything else uses normal `set_properties`. Writes and the mode enum are not yet verified on the FP10.
+**Key protocol note:** power control requires a toggle action (`siid=2, aiid=3`) — direct property writes to `siid=2, piid=1` time out. Everything else uses normal `set_properties`.
 
 ### Verifying the map on your FP10
 
@@ -114,7 +114,7 @@ The map was produced by sweeping siid 1–12 / piid 1–20 with read-only `get_p
 
 ## Credits
 
-- Cloud API + AP10 property map reverse-engineered by [@CodyJon](https://github.com/CodyJon/dreame-ap10-integration) — this project is an FP10 adaptation of that work.
+- Cloud API groundwork by [@CodyJon](https://github.com/CodyJon/dreame-ap10-integration) — see LICENSE.
 
 ## Updating
 
