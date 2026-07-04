@@ -47,12 +47,11 @@ PROP_FAN_SPEED = {"siid": 2, "piid": 4}     # int: 1-10 fan speed level (8 obser
 PROP_AQ_LEVEL = {"siid": 3, "piid": 11}     # int: air quality index (plausible; read 0 with PM2.5 at 8)
 PROP_PM25 = {"siid": 3, "piid": 12}         # int: µg/m³ (AP10 uses 3/5; FP10 confirmed at 3/12, display string at 3/13)
 
-# siid 4: Filters — FP10 reports three filter-like percentages
+# siid 4: Filter
 PROP_FILTER_LIFE = {"siid": 4, "piid": 1}   # int: % (live: 98)
 PROP_FILTER_DAYS_LEFT = {"siid": 4, "piid": 2}  # int: days (live: 709 ≈ the FP10's 2-year filter)
 PROP_FILTER_USED = {"siid": 4, "piid": 3}   # int: hours
-PROP_FILTER2_LIFE = {"siid": 4, "piid": 5}  # int: % (live: 99; which component — roller/pre-filter/carbon — TBD)
-PROP_FILTER3_LIFE = {"siid": 4, "piid": 6}  # int: % (live: 89; which component TBD)
+# (4,5) and (4,6) read 99/89 live but match nothing in the app — not exposed.
 
 # siid 6: Device Settings — (6,1) timezone and (6,2) app schedules exist but aren't polled
 PROP_DEVICE_LOCATION = {"siid": 6, "piid": 3}   # str (live: "Illinois, Chicago")
@@ -67,7 +66,7 @@ PROP_KEYPRESS_TONE = {"siid": 6, "piid": 17}    # int: 0=off, 1=on — VERIFIED 
 POLL_BATCHES = [
     [PROP_POWER, PROP_MODE, PROP_FAN_SPEED, PROP_FIRMWARE, PROP_SERIAL],
     [PROP_AQ_LEVEL, PROP_PM25],
-    [PROP_FILTER_LIFE, PROP_FILTER_DAYS_LEFT, PROP_FILTER_USED, PROP_FILTER2_LIFE, PROP_FILTER3_LIFE],
+    [PROP_FILTER_LIFE, PROP_FILTER_DAYS_LEFT, PROP_FILTER_USED],
     [PROP_DEVICE_LOCATION, PROP_CHILD_LOCK, PROP_LIGHT_BRIGHTNESS, PROP_LIGHT_BREATHING, PROP_KEYPRESS_TONE, PROP_TIMER],
 ]
 
@@ -301,8 +300,6 @@ class DreameAirPurifier:
         self._filter_life = 100
         self._filter_days_left = 365
         self._filter_used = 0
-        self._filter2_life = None
-        self._filter3_life = None
         self._device_location = None
         self._child_lock = False
         self._timer_hours = 0
@@ -359,10 +356,6 @@ class DreameAirPurifier:
     @property
     def filter_hours_used(self): return self._filter_used
     @property
-    def filter2_life(self): return self._filter2_life
-    @property
-    def filter3_life(self): return self._filter3_life
-    @property
     def device_location(self): return self._device_location
     @property
     def child_lock(self): return self._child_lock
@@ -400,8 +393,6 @@ class DreameAirPurifier:
         self._filter_life = all_values.get((4, 1), self._filter_life)
         self._filter_days_left = all_values.get((4, 2), self._filter_days_left)
         self._filter_used = all_values.get((4, 3), self._filter_used)
-        self._filter2_life = all_values.get((4, 5), self._filter2_life)
-        self._filter3_life = all_values.get((4, 6), self._filter3_life)
         self._device_location = all_values.get((6, 3), self._device_location)
         self._child_lock = bool(all_values.get((6, 5), self._child_lock))
         self._light_brightness = all_values.get((6, 6), self._light_brightness)

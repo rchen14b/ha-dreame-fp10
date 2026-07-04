@@ -6,7 +6,7 @@ from homeassistant.const import CONCENTRATION_MICROGRAMS_PER_CUBIC_METER, PERCEN
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
-from .api import DreameAirPurifier, PROP_FILTER2_LIFE, PROP_FILTER3_LIFE
+from .api import DreameAirPurifier
 from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
@@ -18,11 +18,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
         entities.extend([DreamePM25Sensor(data["coordinator"], p), DreameAirQualitySensor(data["coordinator"], p),
                          DreameFilterLifeSensor(data["coordinator"], p), DreameFilterDaysLeftSensor(data["coordinator"], p),
                          DreameFilterUsedSensor(data["coordinator"], p), DreameDeviceLocationSensor(data["coordinator"], p)])
-        # Extra FP10 filter components (live: 99% / 89%) — added only if the device reports them
-        if p.has_prop(PROP_FILTER2_LIFE["siid"], PROP_FILTER2_LIFE["piid"]):
-            entities.append(DreameFilter2LifeSensor(data["coordinator"], p))
-        if p.has_prop(PROP_FILTER3_LIFE["siid"], PROP_FILTER3_LIFE["piid"]):
-            entities.append(DreameFilter3LifeSensor(data["coordinator"], p))
     async_add_entities(entities)
 
 class DreameBaseSensor(CoordinatorEntity, SensorEntity):
@@ -52,22 +47,6 @@ class DreameAirQualitySensor(DreameBaseSensor):
     def __init__(self, coordinator, purifier): super().__init__(coordinator, purifier, "air_quality", "Air Quality Level")
     @property
     def native_value(self): return self._purifier.air_quality_level
-
-class DreameFilter2LifeSensor(DreameBaseSensor):
-    _attr_state_class = SensorStateClass.MEASUREMENT
-    _attr_native_unit_of_measurement = PERCENTAGE
-    _attr_icon = "mdi:air-filter"
-    def __init__(self, coordinator, purifier): super().__init__(coordinator, purifier, "filter2_life", "Filter 2 Life")
-    @property
-    def native_value(self): return self._purifier.filter2_life
-
-class DreameFilter3LifeSensor(DreameBaseSensor):
-    _attr_state_class = SensorStateClass.MEASUREMENT
-    _attr_native_unit_of_measurement = PERCENTAGE
-    _attr_icon = "mdi:air-filter"
-    def __init__(self, coordinator, purifier): super().__init__(coordinator, purifier, "filter3_life", "Filter 3 Life")
-    @property
-    def native_value(self): return self._purifier.filter3_life
 
 class DreameFilterLifeSensor(DreameBaseSensor):
     _attr_state_class = SensorStateClass.MEASUREMENT

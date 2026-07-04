@@ -23,7 +23,6 @@ Custom Home Assistant integration for the **Dreame FP10 Air Purifier** (model `d
 - **PM2.5** — real-time particulate matter (µg/m³)
 - **Air Quality Level** — numeric air quality index from the device
 - **HEPA Filter Life / Days Left / Hours Used**
-- **Filter 2 / Filter 3 Life** — the FP10's additional filter components (roller/pre-filter/carbon — exact identity TBD)
 - **Device Location**
 
 ### Controls
@@ -87,8 +86,8 @@ Mapped by live read-only probes of a real FP10 (`dreame.airp.u2513`, firmware 20
 | 4 | 1 | Filter Life | 0–100% | live-read (98) |
 | 4 | 2 | Filter Days Left | days | live-read (709 ≈ 2-year filter) |
 | 4 | 3 | Filter Hours Used | hours | live-read |
-| 4 | 5 | Filter 2 Life | 0–100% | live-read (99) — which component (roller/pre-filter/carbon) TBD |
-| 4 | 6 | Filter 3 Life | 0–100% | live-read (89) — which component TBD |
+| 4 | 5 | unknown | reads 99 | matches nothing in the app — not exposed |
+| 4 | 6 | unknown | reads 89 | matches nothing in the app — not exposed |
 | 6 | 1 | Timezone | string | live-read, not polled |
 | 6 | 2 | App schedules | encoded string | live-read, not polled |
 | 6 | 3 | Device Location | string | live-read |
