@@ -1,0 +1,10 @@
+"""Constants for Dreame FP10 Air Purifier integration."""
+
+DOMAIN = "dreame_fp10"
+VERSION = "0.1.0"
+SCAN_INTERVAL = 30
+
+CONF_COUNTRY = "country"
+COUNTRY_OPTIONS = ["us", "cn", "eu", "sg", "kr"]
+
+PRESET_MODES = ["AI Purify", "Strong Purification", "Sleep Purification", "Custom Mode", "Pet Purify"]
