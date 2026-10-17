@@ -2,7 +2,7 @@
 import logging
 from homeassistant.components.sensor import SensorEntity, SensorDeviceClass, SensorStateClass
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONCENTRATION_MICROGRAMS_PER_CUBIC_METER, PERCENTAGE, UnitOfTime
+from homeassistant.const import CONCENTRATION_MICROGRAMS_PER_CUBIC_METER, PERCENTAGE, UnitOfTime, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -17,7 +17,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     for p in data["purifiers"]:
         entities.extend([DreamePM25Sensor(data["coordinator"], p), DreameAirQualitySensor(data["coordinator"], p),
                          DreameFilterLifeSensor(data["coordinator"], p), DreameFilterDaysLeftSensor(data["coordinator"], p),
-                         DreameFilterUsedSensor(data["coordinator"], p), DreameDeviceLocationSensor(data["coordinator"], p)])
+                         DreameFilterUsedSensor(data["coordinator"], p), DreameDeviceLocationSensor(data["coordinator"], p),
+                         DreameTemperatureSensor(data["coordinator"], p), DreameHumiditySensor(data["coordinator"], p),
+                         DreameTVOCSensor(data["coordinator"], p)])
     async_add_entities(entities)
 
 class DreameBaseSensor(CoordinatorEntity, SensorEntity):
@@ -77,3 +79,30 @@ class DreameDeviceLocationSensor(DreameBaseSensor):
     def __init__(self, coordinator, purifier): super().__init__(coordinator, purifier, "device_location", "Device Location")
     @property
     def native_value(self): return self._purifier.device_location
+
+class DreameTemperatureSensor(DreameBaseSensor):
+    _attr_device_class = SensorDeviceClass.TEMPERATURE
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
+    _attr_icon = "mdi:thermometer"
+    def __init__(self, coordinator, purifier): super().__init__(coordinator, purifier, "temperature", "Temperature")
+    @property
+    def native_value(self): return self._purifier.temperature
+
+class DreameHumiditySensor(DreameBaseSensor):
+    _attr_device_class = SensorDeviceClass.HUMIDITY
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_native_unit_of_measurement = PERCENTAGE
+    _attr_icon = "mdi:water-percent"
+    def __init__(self, coordinator, purifier): super().__init__(coordinator, purifier, "humidity", "Humidity")
+    @property
+    def native_value(self): return self._purifier.humidity
+
+class DreameTVOCSensor(DreameBaseSensor):
+    _attr_device_class = SensorDeviceClass.VOLATILE_ORGANIC_COMPOUNDS
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_native_unit_of_measurement = CONCENTRATION_MICROGRAMS_PER_CUBIC_METER
+    _attr_icon = "mdi:molecule"
+    def __init__(self, coordinator, purifier): super().__init__(coordinator, purifier, "tvoc", "TVOC")
+    @property
+    def native_value(self): return self._purifier.tvoc

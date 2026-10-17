@@ -44,6 +44,9 @@ PROP_MODE = {"siid": 2, "piid": 3}          # int: 0=Smart, 2=Sleep, 3=Customize
 PROP_FAN_SPEED = {"siid": 2, "piid": 4}     # int: 1-10 fan speed level (8 observed live; app has 10 steps)
 
 # siid 3: Environment Sensors — differs from AP10: piids 2-10 don't exist on FP10
+PROP_TEMPERATURE = {"siid": 3, "piid": 3}
+PROP_HUMIDITY = {"siid": 3, "piid": 2}
+PROP_TVOC = {"siid": 3, "piid": 9}
 PROP_AQ_LEVEL = {"siid": 3, "piid": 11}     # int: air quality index (plausible; read 0 with PM2.5 at 8)
 PROP_PM25 = {"siid": 3, "piid": 12}         # int: µg/m³ (AP10 uses 3/5; FP10 confirmed at 3/12, display string at 3/13)
 
@@ -66,6 +69,9 @@ PROP_KEYPRESS_TONE = {"siid": 6, "piid": 17}    # int: 0=off, 1=on — VERIFIED 
 POLL_BATCHES = [
     [PROP_POWER, PROP_MODE, PROP_FAN_SPEED, PROP_FIRMWARE, PROP_SERIAL],
     [PROP_AQ_LEVEL, PROP_PM25],
+    [PROP_TEMPERATURE],
+    [PROP_HUMIDITY],
+    [PROP_TVOC],
     [PROP_FILTER_LIFE, PROP_FILTER_DAYS_LEFT, PROP_FILTER_USED],
     [PROP_DEVICE_LOCATION, PROP_CHILD_LOCK, PROP_LIGHT_BRIGHTNESS, PROP_LIGHT_BREATHING, PROP_KEYPRESS_TONE, PROP_TIMER],
 ]
@@ -293,6 +299,9 @@ class DreameAirPurifier:
         self._light_brightness = None
         self._light_breathing = None
         self._keypress_tone = False
+        self._temperature = None
+        self._humidity = None
+        self._tvoc = None
         self._pm25 = 0
         self._aq_level = 0
         self._firmware_version = None
@@ -342,6 +351,12 @@ class DreameAirPurifier:
     @property
     def keypress_tone(self): return self._keypress_tone
     @property
+    def temperature(self): return self._temperature
+    @property
+    def humidity(self): return self._humidity
+    @property
+    def tvoc(self): return self._tvoc
+    @property
     def pm25(self): return self._pm25
     @property
     def air_quality_level(self): return self._aq_level
@@ -389,6 +404,9 @@ class DreameAirPurifier:
         self._firmware_version = all_values.get((1, 4), self._firmware_version)
         self._serial_number = all_values.get((1, 5), self._serial_number)
         self._aq_level = all_values.get((3, 11), self._aq_level)
+        self._temperature = all_values.get((3, 3), self._temperature)
+        self._humidity = all_values.get((3, 2), self._humidity)
+        self._tvoc = all_values.get((3, 9), self._tvoc)
         self._pm25 = all_values.get((3, 12), self._pm25)
         self._filter_life = all_values.get((4, 1), self._filter_life)
         self._filter_days_left = all_values.get((4, 2), self._filter_days_left)
